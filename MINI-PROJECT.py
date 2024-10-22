@@ -41,7 +41,7 @@ def handle_request(client_connection):
                 print("Request parsing failed: Malformed request.")
                 print(" Status: 400 Bad Request") 
                 status_code = "400 Bad Request"
-                response = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\n"
+                response = "HTTP/1.1 400 Bad Request\r\n\r\n"
                 client_connection.sendall(response.encode('utf-8'))
                 return
 
@@ -56,7 +56,7 @@ def handle_request(client_connection):
             supported_methods = ['GET']
             if method not in supported_methods:
                 status_code = "501 Not Implemented"
-                response = "HTTP/1.1 501 Not Implemented\r\nContent-Type: text/plain\r\n\r\n"
+                response = "HTTP/1.1 501 Not Implemented\r\n\r\n"
             elif method == 'GET':
                 if path == '/test.html':
                     try:
@@ -72,8 +72,7 @@ def handle_request(client_connection):
                                 # File not modified since the provided date, send 304 Not Modified
                                 status_code = "304 Not Modified"
                                 response = (
-                                    "HTTP/1.1 304 Not Modified\r\n"
-                                    "Content-Type: text/html\r\n\r\n"
+                                    "HTTP/1.1 304 Not Modified\r\n\r\n"
                                 )
                                 print("304 Not Modified, no need to send file.")
                                 client_connection.sendall(response.encode('utf-8'))
@@ -94,14 +93,14 @@ def handle_request(client_connection):
                         print("Serving test.html")
                     except FileNotFoundError:
                         status_code = "404 Not Found"
-                        response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nResource not found."
+                        response = "HTTP/1.1 404 Not Found\r\n\r\nResource not found."
                 else:
                     status_code = "404 Not Found"
-                    response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nResource not found."
+                    response = "HTTP/1.1 404 Not Found\r\n\r\nResource not found."
                     print(f"Invalid path requested: {path}")
             else:
                 status_code = "400 Bad Request"
-                response = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\n"
+                response = "HTTP/1.1 400 Bad Request\r\n\r\n"
 
             print(f"Status: {status_code}")
             client_connection.sendall(response.encode('utf-8'))
