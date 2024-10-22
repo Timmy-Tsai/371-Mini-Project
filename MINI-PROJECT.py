@@ -1,5 +1,12 @@
+#MINI PROJECT
+#Author Timmy Tsai 301456611
+#
+
 import socket
 import threading
+import os
+import time
+from email.utils import formatdate, parsedate_to_datetime
 
 # Define the host and port number
 HOST = '127.0.0.1'
@@ -37,7 +44,15 @@ def handle_request(client_connection):
                 response = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\n"
                 client_connection.sendall(response.encode('utf-8'))
                 return
-            
+
+            # Check for the If-Modified-Since header
+            if_modified_since = None
+            for line in request_lines[1:]:
+                if line.startswith('If-Modified-Since'):
+                    if_modified_since = line.split(":", 1)[1].strip()
+                    print(f"If-Modified-Since: {if_modified_since}")
+                    break
+
             supported_methods = ['GET']
             if method not in supported_methods:
                 status_code = "501 Not Implemented"
@@ -45,6 +60,26 @@ def handle_request(client_connection):
             elif method == 'GET':
                 if path == '/test.html':
                     try:
+                        # Get the last modified time of the file
+                        last_modified = os.path.getmtime('test.html')
+                        last_modified_str = formatdate(last_modified, usegmt=True)
+                        print(f"File last modified: {last_modified_str}")
+
+                        # Check if the file has been modified since the provided date
+                        if if_modified_since:
+                            since_time = parsedate_to_datetime(if_modified_since).timestamp()
+                            if last_modified <= since_time:
+                                # File not modified since the provided date, send 304 Not Modified
+                                status_code = "304 Not Modified"
+                                response = (
+                                    "HTTP/1.1 304 Not Modified\r\n"
+                                    "Content-Type: text/html\r\n\r\n"
+                                )
+                                print("304 Not Modified, no need to send file.")
+                                client_connection.sendall(response.encode('utf-8'))
+                                return
+
+                        # Read and serve the file
                         with open('test.html', 'r') as file:
                             response_body = file.read()
                         content_length = len(response_body)
@@ -52,7 +87,8 @@ def handle_request(client_connection):
                         response = (
                             "HTTP/1.1 200 OK\r\n"
                             f"Content-Type: text/html\r\n"
-                            f"Content-Length: {content_length}\r\n\r\n" +
+                            f"Content-Length: {content_length}\r\n"
+                            f"Last-Modified: {last_modified_str}\r\n\r\n" +
                             response_body
                         )
                         print("Serving test.html")
@@ -64,16 +100,13 @@ def handle_request(client_connection):
                     response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nResource not found."
                     print(f"Invalid path requested: {path}")
             else:
-                status_code = "400 Bottom Bad Request"
+                status_code = "400 Bad Request"
                 response = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\n"
 
             print(f"Status: {status_code}")
             client_connection.sendall(response.encode('utf-8'))
     finally:
         client_connection.close()
-
-
-
 
 # Main server loop to accept and handle requests
 while True:
