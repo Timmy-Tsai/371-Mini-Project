@@ -1,6 +1,7 @@
 import socket
 import struct
 import time
+import random
 
 HEADER_FORMAT = "IIIH"
 HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
@@ -35,8 +36,25 @@ def main():
         # Send packets within congestion window
         while next_seq_num < base + congestion_window and next_seq_num < len(data_chunks):
             packet = create_packet(next_seq_num, 0, congestion_window, data_chunks[next_seq_num])
-            client_socket.sendto(packet, server_address)
-            print(f"Sent packet: {next_seq_num}")
+
+            # Random Aspect: Simulate packet loss
+            if random.random() < 0.10:
+                print(f"Sent LOST packet: {next_seq_num}")
+            else:
+                # simulate corruption - bitflip
+                if random.random() < 0.10:
+                    curropt = bytearray(packet)
+                    # bit flip but dont currupot the header
+                    curropt[random.randint(0, len(curropt) - 1)] ^= 1
+
+                    client_socket.sendto(curropt, server_address)
+                    print(f"Sent CURRUPT packet: {next_seq_num}")
+
+                else:
+                    client_socket.sendto(packet, server_address)
+                    print(f"Sent packet: {next_seq_num}")
+
+
             sent_packets[next_seq_num] = packet
             next_seq_num += 1
 

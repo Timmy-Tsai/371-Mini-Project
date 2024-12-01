@@ -46,11 +46,15 @@ def main():
             received_data.append(data)
             expected_seq_num += 1
 
-        # Send ACK
-        ack_packet = create_packet(0, expected_seq_num - 1, receiver_window_size, "")
-        server_socket.sendto(ack_packet, client_address)
+        # Random Aspect: Simulate Lost ACK
+        if random.random() < 0.10:
+            print(f"sent ACK {seq_num} lost.")
+            continue
+        else:
+            ack_packet = create_packet(0, expected_seq_num - 1, receiver_window_size, "")
+            server_socket.sendto(ack_packet, client_address)
 
-        if data == "END":
+        if data == "END" and received_data[-1] == "END":
             print("End of transmission.")
             break
 
